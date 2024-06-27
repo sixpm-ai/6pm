@@ -10,8 +10,10 @@ import { Button } from '../ui/button'
 
 export function SelectCategoryIconField({
   onSelect,
+  disabled,
 }: {
   onSelect?: (currency: string) => void
+  disabled?: boolean
 }) {
   const sheetRef = useRef<BottomSheetModal>(null)
   const {
@@ -23,6 +25,7 @@ export function SelectCategoryIconField({
     <>
       <Button
         variant="ghost"
+        disabled={disabled}
         onPress={() => {
           Keyboard.dismiss()
           sheetRef.current?.present()
