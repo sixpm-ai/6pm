@@ -28,9 +28,9 @@ export const CategoryForm = ({
     resolver: zodResolver(zCategoryFormValues),
     defaultValues: {
       name: '',
-      type: 'EXPENSE',
       icon: 'CreditCard',
       ...defaultValues,
+      type: defaultValues?.type || 'EXPENSE',
     },
   })
 
@@ -45,8 +45,10 @@ export const CategoryForm = ({
           autoCapitalize="none"
           autoFocus={!defaultValues}
           className="!pl-[62px]"
+          disabled={categoryForm.formState.isLoading}
           leftSection={
             <SelectCategoryIconField
+              disabled={categoryForm.formState.isLoading}
               onSelect={() => nameInputRef.current?.focus()}
             />
           }
@@ -63,10 +65,16 @@ export const CategoryForm = ({
               onValueChange={field.onChange}
             >
               <TabsList>
-                <TabsTrigger value="EXPENSE">
+                <TabsTrigger
+                  disabled={categoryForm.formState.isLoading}
+                  value="EXPENSE"
+                >
                   <Text>{t(i18n)`Expense`}</Text>
                 </TabsTrigger>
-                <TabsTrigger value="INCOME">
+                <TabsTrigger
+                  disabled={categoryForm.formState.isLoading}
+                  value="INCOME"
+                >
                   <Text>{t(i18n)`Income`}</Text>
                 </TabsTrigger>
               </TabsList>
