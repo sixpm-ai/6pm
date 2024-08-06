@@ -1,5 +1,6 @@
 import { getHonoClient } from '@/lib/client'
 import { useMeQuery } from '@/queries/auth'
+import { dayjsExtended } from '@6pm/utilities'
 import {
   type TransactionFormValues,
   type TransactionPopulated,
@@ -11,20 +12,32 @@ import { keyBy } from 'lodash-es'
 import { useMemo } from 'react'
 import { z } from 'zod'
 import { useCategoryList } from '../category/hooks'
+import type { StoreHookQueryOptions } from '../core/stores'
 import { transactionQueries } from './queries'
 import { useTransactionStore } from './store'
 
-export function useTransactionList({
-  from,
-  to,
-  walletAccountId,
-  budgetId,
-}: {
-  from: Date
-  to: Date
-  walletAccountId?: string
-  budgetId?: string
-}) {
+// TODO: Update params here
+const DEFAULT_FROM = dayjsExtended()
+  .subtract(10, 'year')
+  .startOf('year')
+  .toDate()
+const DEFAULT_TO = dayjsExtended().add(10, 'year').endOf('year').toDate()
+
+export const useTransactionListQueryOptions = (
+  {
+    // FIXME: This should be dynamic @bkdev98
+    from = DEFAULT_FROM,
+    to = DEFAULT_TO,
+    // walletAccountId,
+    // budgetId,
+  }: {
+    from?: Date
+    to?: Date
+    walletAccountId?: string
+    budgetId?: string
+  } = {},
+  queryOptions?: StoreHookQueryOptions,
+) => {
   const transactionsInRangeFromStore =
     useTransactionStore().transactions.filter(
       (t) => new Date(t.date) >= from && new Date(t.date) <= to,
@@ -32,7 +45,7 @@ export function useTransactionList({
   const updateTransactionsByRange = useTransactionStore(
     (state) => state.updateTransactionsByRange,
   )
-  const query = useQuery({
+  return {
     ...transactionQueries.list({
       filters: { from, to },
       updateTransactionsByRangeInStore: updateTransactionsByRange,
@@ -41,7 +54,39 @@ export function useTransactionList({
       transactionsInRangeFromStore.length > 0
         ? transactionsInRangeFromStore
         : undefined,
-  })
+    ...queryOptions,
+  }
+}
+
+export function useTransactionList(
+  {
+    // FIXME: This should be dynamic @bkdev98
+    from = DEFAULT_FROM,
+    to = DEFAULT_TO,
+    walletAccountId,
+    budgetId,
+  }: {
+    from?: Date
+    to?: Date
+    walletAccountId?: string
+    budgetId?: string
+  } = {},
+  queryOptions?: StoreHookQueryOptions,
+) {
+  const transactionsInRangeFromStore =
+    useTransactionStore().transactions.filter(
+      (t) => new Date(t.date) >= from && new Date(t.date) <= to,
+    )
+  const queryOpts = useTransactionListQueryOptions(
+    {
+      from,
+      to,
+      walletAccountId,
+      budgetId,
+    },
+    queryOptions,
+  )
+  const query = useQuery(queryOpts)
 
   const { transactions, transactionDict, totalExpense, totalIncome } =
     useMemo(() => {
