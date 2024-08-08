@@ -1,5 +1,4 @@
 import { AmountFormat } from '@/components/common/amount-format'
-import { ListSkeleton } from '@/components/common/list-skeleton'
 import { Toolbar } from '@/components/common/toolbar'
 import { HomeHeader } from '@/components/home/header'
 import { WalletStatistics } from '@/components/home/wallet-statistics'
@@ -9,12 +8,9 @@ import { Text } from '@/components/ui/text'
 import { useColorScheme } from '@/hooks/useColorScheme'
 import { formatDateShort } from '@/lib/date'
 import { theme } from '@/lib/theme'
-import { walletQueries } from '@/queries/wallet'
 import { useTransactionList } from '@/stores/transaction/hooks'
-import { dayjsExtended } from '@6pm/utilities'
 import { t } from '@lingui/macro'
 import { useLingui } from '@lingui/react'
-import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns/format'
 import { LinearGradient } from 'expo-linear-gradient'
 import { groupBy, mapValues, orderBy, sumBy } from 'lodash-es'
@@ -27,21 +23,31 @@ export default function HomeScreen() {
   const { top, bottom } = useSafeAreaInsets()
   const { colorScheme } = useColorScheme()
   const [walletAccountId, setWalletAccountId] = useState<string | undefined>()
-  const queryClient = useQueryClient()
+  // const queryClient = useQueryClient()
 
-  const { transactions, isLoading, isRefetching, refetch } = useTransactionList(
-    {
-      walletAccountId,
-      // FIXME: This should be dynamic @bkdev98
-      from: dayjsExtended().subtract(10, 'year').startOf('year').toDate(),
-      to: dayjsExtended().add(10, 'year').endOf('year').toDate(),
-    },
+  const {
+    transactions: allTransactions,
+    isLoading,
+    // isRefetching,
+    // refetch,
+  } = useTransactionList() // TODO: Update params here
+
+  // const handleRefresh = () => {
+  //   refetch()
+  //   queryClient.invalidateQueries({ queryKey: walletQueries.list._def })
+  // }
+
+  const transactions = useMemo(
+    () =>
+      allTransactions.filter((t) => {
+        if (!walletAccountId) {
+          return true
+        }
+
+        return t.walletAccountId === walletAccountId
+      }),
+    [allTransactions, walletAccountId],
   )
-
-  const handleRefresh = () => {
-    refetch()
-    queryClient.invalidateQueries({ queryKey: walletQueries.list._def })
-  }
 
   const transactionsGroupByDate = useMemo(() => {
     const groupedByDay = groupBy(transactions, (transaction) =>
@@ -72,8 +78,8 @@ export default function HomeScreen() {
         }
         className="flex-1 bg-card"
         contentContainerStyle={{ paddingBottom: bottom + 32 }}
-        refreshing={isRefetching}
-        onRefresh={handleRefresh}
+        // refreshing={isRefetching}
+        // onRefresh={handleRefresh}
         sections={transactionsGroupByDate}
         keyExtractor={(item) => item.id}
         renderItem={({ item: transaction }) => (
@@ -96,7 +102,7 @@ export default function HomeScreen() {
         //   }
         // }}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={isLoading ? <ListSkeleton /> : null}
+        // ListFooterComponent={isLoading ? <ListSkeleton /> : null}
       />
       {!transactions.length && !isLoading && (
         <View className="absolute right-6 bottom-20 z-50 flex-row gap-3">
